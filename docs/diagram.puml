@@ -1,0 +1,89 @@
+@startuml
+
+package Model {
+    +class Preset {
+     + Data: IReadOnlyCollection<byte>
+     + <<create>> Preset(data: byte[])
+    }
+    
+    +enum DeviceInputType {
+     Pads
+     Keys
+     ModWheel
+     PitchBend
+    }
+    
+    +class PresetSpec {
+     - deviceInputSpecs: List<DeviceInputSpec>
+     + DeviceInputSpecs: IReadOnlyCollection<DeviceInputSpec>
+     + AddChannelIndices(type: DeviceInputType, indices: IReadOnlyCollection<int>))
+    }
+    
+    +class DeviceInputSpec {
+     + Type: DeviceInputType
+     + ChannelIndices: IReadOnlyCollection<int>
+    }
+    
+    +class TemplatingRules {
+     + UseChannels: IReadOnlyCollection<int>
+     + InputTypes: IReadOnlyCollection<DeviceInputType>
+    }
+}
+
+package Filesystem {    
+    +class PresetSpecFileManager {
+     + LoadPresetSpecAsync(path: string): Task<PresetSpec>
+     + SavePresetSpecAsync(path: string, spec: PresetSpec): Task
+    }
+    
+    +class PresetFileManager {
+     + LoadPresetAsync(path: string): Task<Preset>
+     + SavePresetAsync(path: string, template: Preset): Task
+    }
+}
+
+package Specs {    
+    ~class PresetDiff {
+     + Indices: IReadOnlyCollection<int>
+     + <<create>> PresetDiff(indices: IReadOnlyCollection<int>)
+    }
+    
+    ~class PresetsComparer {
+     + ComparePresets(t1: Preset, t2: Preset): PresetDiff
+    }
+    
+    interface IPresetSpecBuilder {
+     + WithDeviceInputType(type: DeviceInputType): DeviceInputSpecBuilder
+     + Build(): PresetSpec
+    }
+     
+    -class DeviceInputSpecBuilder implements IPresetSpecBuilder {
+     - parentInstance: IPresetSpecBuilder
+     + SetChannelIndicesDiff(preset: Preset) : DeviceInputSpecBuilder
+     + WithDeviceInputType(type: DeviceInputType): DeviceInputSpecBuilder
+     + Build(): PresetSpec
+    }
+    
+    ~class PresetSpecBuilder implements IPresetSpecBuilder {    
+     - draft: PresetSpec 
+     + CreateFrom(base: Preset)
+     + WithDeviceInputType(type: DeviceInputType): DeviceInputSpecBuilder
+     + Build(): PresetSpec
+    }
+    
+    PresetSpecBuilder <.. DeviceInputSpecBuilder
+}
+
+package Templating {    
+    +class PresetsGenerator {
+     + Generate(template: Preset, rules: IReadOnlyCollection<TemplatingRules>): List<Preset>
+    }
+    
+    ~class PresetBuilder {
+     + CreateFrom(template: Preset)
+     + SetChannel(channel: int, input: DeviceInputType): PresetBuilder
+     + Build(): Preset
+    }
+}
+
+@enduml
